@@ -8,6 +8,31 @@ The application uses **Gemini 2.5**, **Python**, and **Streamlit** to analyze
 resumes against optional job descriptions and produce structured hiring
 insights, including skills fit, match scores, and fairness audits.
 
+## Demo
+
+![FairHire Streamlit demo showing a sample resume and its rule-based PII preview](docs/fairhire-demo.jpg)
+
+The screenshot shows the running Streamlit app with a **synthetic** resume. The
+rule-based preview replaces the sample email and phone number with `[EMAIL]`
+and `[PHONE]`. This preview works without an API key; it is not a Gemini
+analysis result.
+
+To try it locally, install dependencies with `pip install -r requirements.txt`
+and run `streamlit run app.py`. Paste this sample into **Resume text**:
+
+```text
+Alex Taylor
+Email: alex.taylor@example.com | Phone: 555-123-4567
+Software engineer with 6 years of Python, SQL, and data visualization experience.
+Built dashboards and automated reporting pipelines.
+```
+
+Optionally enter `Data Analyst: Python, SQL, dashboarding, stakeholder
+communication.` as the job description, then expand **Bias-filtered resume
+preview (rule-based)**. For the full match-score and fairness analysis, set
+`GEMINI_API_KEY` or `GOOGLE_API_KEY` before launching the app and click
+**Analyze**. Without a key, **Analyze** reports that a key is required.
+
 ## ✨ Key Features
 
 - Upload resumes in **PDF or TXT** format
@@ -59,6 +84,7 @@ Resume + Optional Job Description
               |
               v
           CSV Logging
+```
 
 🤖 BiasFilterAgent
 A key component of FairHire is the BiasFilterAgent, which uses an
