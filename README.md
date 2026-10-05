@@ -4,7 +4,7 @@ FairHire is an AI-powered hiring analysis application that combines
 deterministic data processing with LLM-based agents to evaluate candidate
 fit while reducing bias from personally identifiable information (PII).
 
-The application uses **Gemini 2.5**, **Python**, and **Streamlit** to analyze
+The application uses **Gemini 3.8 Flash**, **Python**, and **Streamlit** to analyze
 resumes against optional job descriptions and produce structured hiring
 insights, including skills fit, match scores, and fairness audits.
 
@@ -31,7 +31,8 @@ Optionally enter `Data Analyst: Python, SQL, dashboarding, stakeholder
 communication.` as the job description, then expand **Bias-filtered resume
 preview (rule-based)**. For the full match-score and fairness analysis, set
 `GEMINI_API_KEY` or `GOOGLE_API_KEY` before launching the app and click
-**Analyze**. Without a key, **Analyze** reports that a key is required.
+**Analyze**. A key with available Gemini API quota is required. Without a key,
+**Analyze** reports that a key is required.
 
 ## ✨ Key Features
 
@@ -69,7 +70,7 @@ Resume + Optional Job Description
       Anonymized Resume
               |
               v
-        Gemini 2.5
+     Gemini 3.8 Flash
               |
               v
      Structured Analysis
@@ -214,12 +215,11 @@ The Streamlit application supports:
 - Agent execution details
 - Recent analysis history
 Supported Gemini models:
-- gemini-2.5-flash
-- gemini-2.5-pro
+- gemini-3.8-flash
 🧰 Tech Stack
 Backend / AI
 - Python
-- Gemini 2.5
+- Gemini 3.8 Flash
 - Google Generative AI SDK
 Application
 - Streamlit

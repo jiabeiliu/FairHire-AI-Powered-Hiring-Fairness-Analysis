@@ -1,4 +1,4 @@
-# app.py — FairHire (Streamlit + Gemini 2.5 + BiasFilterAgent + CSV logging)
+# app.py — FairHire (Streamlit + Gemini 3.8 Flash + BiasFilterAgent + CSV logging)
 # Requirements:
 #   pip install streamlit google-generativeai pypdf
 #
@@ -152,7 +152,7 @@ Anonymized resume:
         }
 
 
-def bias_filter_agent(original_resume: str, model_id: str = "gemini-2.5-flash") -> dict:
+def bias_filter_agent(original_resume: str, model_id: str = "gemini-3.8-flash") -> dict:
     """
     强一点的 BiasFilterAgent：
 
@@ -186,7 +186,9 @@ def bias_filter_agent(original_resume: str, model_id: str = "gemini-2.5-flash") 
         "done": False,
     }
 
-    max_loops = 5  # 安全上限，防止死循环
+    # Bound a run to at most five model calls: three planner calls,
+    # one optional verification call, and one final analysis call.
+    max_loops = 3
 
     for _ in range(max_loops):
         # 构造给 planner 的状态概要（不要把全文塞进去，太长）
@@ -294,7 +296,7 @@ def _clean_json_text(raw: str) -> str:
 def analyze_resume(
     resume_text: str,
     jd_text: str = "",
-    model_id: str = "gemini-2.5-flash"
+    model_id: str = "gemini-3.8-flash"
 ) -> tuple[dict | None, str | None]:
     """
     Main analysis:
@@ -343,6 +345,12 @@ def analyze_resume(
 }
 """
 
+    bias_filter_summary = json.dumps({
+        "removed_stats": bias_result["removed_stats"],
+        "residual_issues": bias_result["residual_issues"],
+        "fairness_tips": bias_result["fairness_tips"],
+    }, ensure_ascii=False)
+
     prompt = f"""
 You are FairHireAgent, a fair and bias-aware hiring assistant.
 
@@ -362,11 +370,7 @@ Filtered resume (use this for evaluation):
 \"\"\"{filtered_resume[:3000]}\"\"\"
 
 BiasFilter result:
-{json.dumps({
-    "removed_stats": bias_result["removed_stats"],
-    "residual_issues": bias_result["residual_issues"],
-    "fairness_tips": bias_result["fairness_tips"],
-}, ensure_ascii=False)}
+{bias_filter_summary}
 
 Your task:
 1) Summarize the candidate in 3–5 bullets.
@@ -486,15 +490,15 @@ if "jd_text" not in st.session_state:
 
 # ---------- UI ----------
 st.set_page_config(page_title="FairHire – Fair Hiring Agent", layout="centered")
-st.title("🤖 FairHire – Fair Hiring Agent (Gemini 2.5)")
+st.title("🤖 FairHire – Fair Hiring Agent (Gemini 3.8 Flash)")
 st.caption("Upload a resume and optionally add a Job Description. The AI analyzes fit and fairness.")
 
 # Model selector
 model_id = st.selectbox(
     "Model",
-    options=["gemini-2.5-flash", "gemini-2.5-pro"],
+    options=["gemini-3.8-flash"],
     index=0,
-    help="Use Flash for fast/free demos; Pro for higher quality."
+    help="Gemini 3.8 Flash is the currently supported demo model."
 )
 
 # Upload
