@@ -29,3 +29,5 @@ jobs:
         run: |
           flake8 . --max-line-length=120 --ignore=E302,E305,W291
 
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
