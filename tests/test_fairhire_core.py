@@ -49,6 +49,15 @@ class MaskingTests(unittest.TestCase):
         self.assertNotIn("Jane Doe", filtered)
         self.assertEqual(stats["names_removed"], 1)
 
+    def test_synthetic_identity_swap_has_same_filtered_skills(self):
+        alternate = RESUME.replace("Alex Taylor", "Maria Lopez").replace(
+            "alex.taylor@example.com", "maria.lopez@example.com"
+        ).replace("555-123-4567", "555-987-6543")
+        original_filtered, original_stats = bias_filter_rule_based(RESUME)
+        alternate_filtered, alternate_stats = bias_filter_rule_based(alternate)
+        self.assertEqual(original_filtered, alternate_filtered)
+        self.assertEqual(original_stats, alternate_stats)
+
     def test_does_not_treat_job_title_as_name(self):
         filtered, stats = bias_filter_rule_based(
             "Software Engineer\nEmail: candidate@example.com\n"

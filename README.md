@@ -88,7 +88,7 @@ python -m unittest discover -s tests -v
 flake8 . --max-line-length=120 --ignore=E302,E305,W291
 ```
 
-These tests use mocks and require no Gemini key. GitHub Actions runs both commands. A separate live request was verified for the screenshots above.
+These tests use mocks and require no Gemini key. One synthetic identity-swap test checks that two resumes with identical skills but different header names/contact details become the same filtered text. This tests the masking rule only, **not** equal model scores or fairness across real applicants. GitHub Actions runs both commands. A separate live request was verified for the screenshots above.
 
 ## Docker
 
