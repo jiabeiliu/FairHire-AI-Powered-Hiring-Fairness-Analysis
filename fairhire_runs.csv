@@ -6,3 +6,5 @@ timestamp,model_id,resume_chars,jd_chars,match_score,bias_flag_count,emails_remo
 2025-11-05T10:49:03,gemini-2.5-flash,3242,9,85,4,1,1,11,0
 2025-11-06T12:38:20,gemini-2.5-flash,2842,0,90,5,1,0,9,0
 2025-11-13T11:49:22,gemini-2.5-flash,6035,0,0,4,1,0,11,0
+2026-10-06T13:59:43,gemini-3.5-flash-lite,198,67,90,0,1,1,0,0
+2026-10-06T14:02:52,gemini-3.5-flash-lite,198,67,85,0,1,1,0,0

@@ -4,18 +4,37 @@ FairHire is an AI-powered hiring analysis application that combines
 deterministic data processing with LLM-based agents to evaluate candidate
 fit while reducing bias from personally identifiable information (PII).
 
-The application uses **Gemini 3.8 Flash**, **Python**, and **Streamlit** to analyze
+The application uses **Gemini**, **Python**, and **Streamlit** to analyze
 resumes against optional job descriptions and produce structured hiring
 insights, including skills fit, match scores, and fairness audits.
 
 ## Demo
 
-![FairHire Streamlit demo showing a sample resume and its rule-based PII preview](docs/fairhire-demo.jpg)
+The screenshots below show one complete local run using a **synthetic** resume
+and job description. The rule-based preview replaces the sample email and phone
+number with `[EMAIL]` and `[PHONE]`; that preview does not call Gemini. The
+score, skills, fairness audit, and recommendation are from a real API response
+using `gemini-3.5-flash-lite` on October 6, 2026. The final run scored 85;
+the CSV also shows an earlier exploratory run scoring 90. The default
+`gemini-3.8-flash` returned a temporary 503 high-demand error during this run,
+so Flash-Lite was selected in the model dropdown. The score is an illustrative
+model judgment, not a validated hiring decision.
 
-The screenshot shows the running Streamlit app with a **synthetic** resume. The
-rule-based preview replaces the sample email and phone number with `[EMAIL]`
-and `[PHONE]`. This preview works without an API key; it is not a Gemini
-analysis result.
+1. Synthetic resume and job description:
+
+   ![Synthetic resume and job description in FairHire](docs/demo-01-input.jpg)
+
+2. Deterministic PII masking preview:
+
+   ![Email and phone masked in the rule-based preview](docs/demo-02-mask.jpg)
+
+3. Gemini result: match score, skill groups, and fairness audit:
+
+   ![Live Gemini result showing a score of 85 and skills fit](docs/demo-03-results.jpg)
+
+4. Recommendation and the CSV entry identifying the model used:
+
+   ![Recommendation and analysis log for Gemini 3.5 Flash-Lite](docs/demo-04-recommendation.jpg)
 
 To try it locally, install dependencies with `pip install -r requirements.txt`
 and run `streamlit run app.py`. Paste this sample into **Resume text**:
@@ -32,7 +51,8 @@ communication.` as the job description, then expand **Bias-filtered resume
 preview (rule-based)**. For the full match-score and fairness analysis, set
 `GEMINI_API_KEY` or `GOOGLE_API_KEY` before launching the app and click
 **Analyze**. A key with available Gemini API quota is required. Without a key,
-**Analyze** reports that a key is required.
+**Analyze** reports that a key is required. Select Flash-Lite if the default
+model is temporarily overloaded; availability and scores can vary by run.
 
 ## ✨ Key Features
 
@@ -143,12 +163,12 @@ The agent loop is limited to a maximum number of iterations to prevent
 infinite or repetitive execution.
 Repeated PII detection is also detected and automatically redirected
 to verification.
-4. Structured Output Validation
-Both the planner and the final analysis are expected to return
-structured JSON.
-The application parses and validates these responses before using them.
-If the planner returns invalid JSON, the workflow safely terminates
-instead of continuing with an unknown action.
+4. JSON Parsing
+Both the planner and final analysis are prompted to return JSON. The
+application parses the JSON and fills missing bias-filter fields, but does
+not yet enforce a strict schema for all model-generated fields. If the
+planner returns invalid JSON, it stops and deterministic masking remains
+available as a fallback.
 5. Fallback Logic
 FairHire includes fallback behavior for several failure scenarios.
 For example:
@@ -173,9 +193,10 @@ Filtered Resume
       ↓
 Candidate Evaluation
 
-The final evaluation focuses primarily on the filtered resume so that
-skills and experience can be analyzed with less exposure to sensitive
-candidate information.
+The final scoring prompt receives the filtered resume, not the original
+resume. The deterministic filter currently masks email, phone, years, and
+gender terms; it does not guarantee removal of names or all protected
+attributes, so this is a demo rather than a production-safe hiring tool.
 The verifier can also identify residual signals such as:
 - Gender
 - Age
@@ -215,12 +236,13 @@ The Streamlit application supports:
 - Agent execution details
 - Recent analysis history
 Supported Gemini models:
-- gemini-3.8-flash
+- gemini-3.8-flash (default)
+- gemini-3.5-flash-lite (lower-latency alternative)
 🧰 Tech Stack
 Backend / AI
 - Python
-- Gemini 3.8 Flash
-- Google Generative AI SDK
+- Gemini 3.8 Flash or 3.5 Flash-Lite
+- Google GenAI SDK (`google-genai`), using the Interactions API
 Application
 - Streamlit
 Data Processing
@@ -262,7 +284,10 @@ Build the image:
 docker build -t fairhire .
 
 Run the container:
-docker run fairhire
+docker run --rm -p 8080:8080 --env GEMINI_API_KEY fairhire
+
+Set `GEMINI_API_KEY` in the host shell first, then open
+`http://localhost:8080`. Do not put the key literal in the command line.
 
 📈 Analysis Logging
 FairHire records analysis metadata in fairhire_runs.csv, including:

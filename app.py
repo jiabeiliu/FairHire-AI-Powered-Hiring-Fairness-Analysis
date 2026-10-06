@@ -1,6 +1,6 @@
-# app.py — FairHire (Streamlit + Gemini 3.8 Flash + BiasFilterAgent + CSV logging)
+# app.py — FairHire (Streamlit + Gemini + BiasFilterAgent + CSV logging)
 # Requirements:
-#   pip install streamlit google-generativeai pypdf
+#   pip install streamlit google-genai pypdf
 #
 # Run:
 #   streamlit run app.py
@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 
 # ---------- PDF parsing ----------
 try:
@@ -38,8 +38,17 @@ def get_api_key() -> str | None:
     return key
 
 API_KEY = get_api_key()
-if API_KEY:
-    genai.configure(api_key=API_KEY)
+
+
+def generate_text(prompt: str, model_id: str) -> str:
+    """Call the current Gemini Interactions API without retaining an interaction."""
+    with genai.Client(api_key=API_KEY) as client:
+        interaction = client.interactions.create(
+            model=model_id, input=prompt, store=False, timeout=30
+        )
+    return interaction.output_text or ""
+
+
 # ---------- BiasFilter "strong agent" ----------
 def bias_filter_rule_based(text: str) -> tuple[str, dict]:
     """
@@ -118,7 +127,6 @@ def tool_verify_bias_llm(text: str, model_id: str) -> dict:
             "fairness_tips": [],
         }
 
-    model = genai.GenerativeModel(model_id)
     prompt = f"""
 You are BiasFilterVerifier.
 
@@ -138,8 +146,7 @@ Anonymized resume:
 \"\"\"{text[:4000]}\"\"\"
 """
     try:
-        resp = model.generate_content(prompt)
-        raw = resp.text or ""
+        raw = generate_text(prompt, model_id)
         data = json.loads(_clean_json_text(raw))
         return {
             "residual_issues": data.get("residual_issues", []),
@@ -172,8 +179,6 @@ def bias_filter_agent(original_resume: str, model_id: str = "gemini-3.8-flash") 
             "fairness_tips": [],
             "steps": [],
         }
-
-    model = genai.GenerativeModel(model_id)
 
     # 初始化 agent 状态
     state = {
@@ -224,8 +229,7 @@ Return ONLY valid JSON:
 """
 
         try:
-            resp = model.generate_content(planner_prompt)
-            decision_raw = resp.text or ""
+            decision_raw = generate_text(planner_prompt, model_id)
             decision = json.loads(_clean_json_text(decision_raw))
             action = decision.get("action", "finish")
         except Exception:
@@ -311,8 +315,6 @@ def analyze_resume(
     bias_result = bias_filter_agent(resume_text, model_id=model_id)
     filtered_resume = bias_result["filtered_resume"]
 
-    model = genai.GenerativeModel(model_id)
-
     jd_block = f"Job Description:\n{jd_text}\n" if jd_text else "Job Description: (not provided)\n"
 
     schema_description = """
@@ -358,13 +360,8 @@ Return the result as **JSON only**. No natural language explanation, no markdown
 
 We already anonymized the resume using a BiasFilterAgent.
 Use ONLY the FILTERED resume for scoring and skill analysis to avoid bias.
-You can use the original resume information only to understand context if needed,
-but your final evaluation should focus on skills and experience.
 
 {jd_block}
-
-Original resume (for context only):
-\"\"\"{resume_text[:3000]}\"\"\"
 
 Filtered resume (use this for evaluation):
 \"\"\"{filtered_resume[:3000]}\"\"\"
@@ -385,8 +382,7 @@ Return ONLY valid JSON following exactly this schema:
 
     # 先调用 API，拿到原始文本
     try:
-        resp = model.generate_content(prompt)
-        raw = resp.text or ""
+        raw = generate_text(prompt, model_id)
     except Exception as e:
         # API 调用失败，直接把错误信息作为 raw 返回
         return None, f"❌ Gemini API call failed: {e}"
@@ -490,15 +486,15 @@ if "jd_text" not in st.session_state:
 
 # ---------- UI ----------
 st.set_page_config(page_title="FairHire – Fair Hiring Agent", layout="centered")
-st.title("🤖 FairHire – Fair Hiring Agent (Gemini 3.8 Flash)")
+st.title("🤖 FairHire – Fair Hiring Agent (Gemini)")
 st.caption("Upload a resume and optionally add a Job Description. The AI analyzes fit and fairness.")
 
 # Model selector
 model_id = st.selectbox(
     "Model",
-    options=["gemini-3.8-flash"],
+    options=["gemini-3.8-flash", "gemini-3.5-flash-lite"],
     index=0,
-    help="Gemini 3.8 Flash is the currently supported demo model."
+    help="Gemini 3.8 Flash is the default; Flash-Lite is a lower-latency alternative."
 )
 
 # Upload
